@@ -4,100 +4,124 @@ section .text
     global _start
 
 _start:
-    ; Load the first two numbers into registers
-    mov     eax, [angka1]  ; Load angka1 into eax
-    mov     ebx, [angka2]  ; Load angka2 into ebx
-
-    ; Compare angka1 and angka2
+    mov     eax, [angka1]        ; simpan angka pertama di eax
+    mov     ebx, [angka2]        ; simpan angka kedua di ebx
     cmp     eax, ebx
-    jg      check_angka_ketiga  ; If angka1 > angka2, jump to check_angka_ketiga
-
-    ; If angka2 is greater or equal, move angka2 to eax
-    mov     eax, ebx
+    jg      check_angka_ketiga
+    mov     eax, ebx             ; angka kedua lebih besar
 
 check_angka_ketiga:
-    ; Load angka3 into ecx
-    mov     ecx, [angka3]
-
-    ; Compare the current largest (in eax) with angka3
-    cmp     eax, ecx
-    jg      _exit  ; If current largest > angka3, jump to _exit
-
-    ; If angka3 is greater, move it to eax
-    mov     eax, ecx
+    mov     ebx, [angka3]
+    cmp     eax, ebx
+    jg      _exit
+    mov     eax, ebx             ; angka ketiga lebih besar
 
 _exit:
-    ; Store the largest number in 'terbesar'
-    mov     [terbesar], eax
+    mov     [terbesar], eax      ; simpan angka terbesar
 
-    ; Prepare to print the message
-    mov     edx, len
+    ; cetak pesan
     mov     ecx, msg
-    mov     ebx, 1      ; stdout
-    mov     eax, 4      ; sys_write
+    mov     edx, len
+    mov     ebx, 1               ; stdout
+    mov     eax, 4               ; sys_write
     int     0x80
 
-    ; Prepare to print the largest number
-    mov     eax, [terbesar]  ; Load the largest number into eax
-    add     eax, '0'         ; Convert to ASCII
-    mov     [terbesar], eax   ; Store back to 'terbesar'
+    ; konversi angka (eax = terbesar) ke string
+    mov     eax, [terbesar]
+    mov     edi, buffer + 9
+    mov     byte [edi], 0        ; null terminator
 
-    mov     edx, 1          ; Length of the number to print (1 byte)
-    mov     ecx, terbesar    ; Pointer to the number
-    mov     ebx, 1          ; stdout
-    mov     eax, 4          ; sys_write
+convert_loop:
+    mov     edx, 0
+    mov     ecx, 10
+    div     ecx
+    add     dl, '0'
+    dec     edi
+    mov     [edi], dl
+    test    eax, eax
+    jnz     convert_loop
+
+    ; tampilkan angka
+    mov     eax, 4
+    mov     ebx, 1
+    mov     ecx, edi
+    mov     edx, buffer + 10
+    sub     edx, edi
     int     0x80
 
-    ; Exit the program
-    mov     eax, 1          ; sys_exit
-    xor     ebx, ebx        ; Return 0
+    ; keluar
+    mov     eax, 1
+    xor     ebx, ebx
     int     0x80
 
 section .data
     msg db 'angka yang paling besar adalah ', 0xA, 0xD
-    len equ $ - msg
-    angka1 dd 52            ; Use actual numbers instead of strings
+    len equ $- msg
+    angka1 dd 52
     angka2 dd 33
     angka3 dd 12
 
 section .bss
-    terbesar resb 1         ; Reserve 1 byte for the largest number
+    terbesar resd 1
+    buffer resb 10
+    
 ```
-<img width="236" alt="image" src="https://github.com/user-attachments/assets/b284eb53-3aea-45a1-a050-cf1e555350ef" />
+![Screenshot 2025-04-15 091852](https://github.com/user-attachments/assets/f2a169a3-55cc-45c8-8d64-fc35b8cd89c5)
+
+- Program ini membandingkan tiga angka: 52, 33, dan 12. Ia mencari angka terbesar di antara ketiganya, yaitu 52. Dengan hasil output nya yaitu mencetak pesan: angka yang paling besar adalah 52.
 
 
 ## Analisis dari codingan Instruksi Kondisi diatas
 - section .text: Bagian ini berisi kode program (instruksi yang dijalankan).
 - global _start: Mendeklarasikan label _start sebagai entry point (fungsi utama) untuk program ini. Ini diperlukan untuk sistem operasi tahu dari mana memulai eksekusi.
-
 - _start: Label sebagai titik awal eksekusi.
-- mov ecx, [angka1] : Memindahkan nilai dari angka1 ke register ECX.
-- mov ecx, [angka2] : Nilai di angka2 dimasukkan ke ECX, menimpa isi sebelumnya.
+- mov eax, [angka1] : Memindahkan nilai dari angka1 ke register ECX.
+- mov ebx, [angka2] : Nilai di angka2 dimasukkan ke EBX, menimpa isi sebelumnya.
+- cmp eax,ebx : nstruksi ini hanya membandingkan, tidak mengubah nilai register.
 - jg check_angka_ketiga : Jump if Greater – lompat ke check_angka_ketiga jika nilai sebelumnya lebih besar.
-- mov ecx, [num2] : Mengambil nilai dari num2 ke ECX.
-- pada bagian chek_angka_ketiga : Label (salah ketik dari check_angka_ketiga), tempat pemeriksaan angka ketiga dimulai.
-- cmp ecx, [angka3] : Membandingkan isi ECX dengan angka3
-- jg _exit : Jika ECX lebih besar dari angka3, lompat ke _exit.
-- mov ecx, [amgka3] : Mengisi ECX dengan angka3.
+- mov eax, ebx : Jika EAX <= EBX, maka kita simpan angka2 sebagai nilai terbesar sementara di EAX.
+- pada bagian chek_angka_ketiga : Label, tempat pemeriksaan angka ketiga dimulai.
+- mov ebx, [angka3] : Ambil nilai angka3 dan simpan ke EBX.
+- cmp eax, ebx : Bandingkan nilai terbesar sementara (EAX) dengan angka3 (EBX)
+- jg _exit : Jika EAX > EBX, kita lanjut ke label _exit (berarti angka3 bukan yang terbesar).
+- mov eax, ebx : Jika tidak, berarti angka3 lebih besar → simpan angka3 sebagai nilai terbesar di EAX.
 - _exit : Label tempat eksekusi berakhir dan output dimulai.
-- mov [terbesar], ecx : Nilai terbesar yang sudah dibandingkan disimpan ke variabel terbesar.
-- mov ecx, msg : lMengisi ECX dengan alamat dari string msg.
+- mov [terbesar], eax : Simpan nilai terbesar dari EAX ke variabel terbesar di memori (bagian .bss).
+- mov ecx, msg : Mengisi ECX dengan alamat dari string msg.
 - mov edx, len : Mengisi EDX dengan panjang string msg.
 - mov ebx, 1 : Menentukan file descriptor 1 (stdout) untuk output.
 - mov ebx, 4 : Menimpa EBX sebelumnya dengan angka syscall 4 (write).
 - int 0x80 : Memanggil interrupt Linux untuk menjalankan syscall (write ke layar).
-- mov ecx, terbesar : Mengisi ECX dengan alamat dari terbesar.
-- mov edx, 2 : Menyatakan bahwa 2 byte akan ditampilkan.
-- mov ebx, 1 : File descriptor untuk stdout.
-- mov eax, 4 : Nomor syscall untuk write.
-- int 0x80 : Menampilkan nilai terbesar ke layar (sebagai output mentah, belum diubah jadi string angka).
-- mov eax, 1 : Syscall nomor 1 untuk keluar dari program.
-- int 80h : Menjalankan syscall exit.
+- mov eax, terbesar : Ambil angka terbesar dari memori, taruh di EAX.
+- mov edi, buffer + 9 : EDI diarahkan ke akhir buffer untuk menyimpan karakter dari belakang.
+- mov byte [edi], 0 : Tambahkan null terminator (akhir dari string, seperti di bahasa C).
+- convert_loop:
+  mov edx, 0 : Bersihkan EDX, karena DIV menggunakan EDX:EAX.
+- mov ecx,10
+  div ecx : Bagi eax dengan 10, dan hasil pembagian masuk EAX, sisa di EDX.
+- add d1, '0' : Ubah angka sisa ke ASCII
+- dec edi
+  mov [edi], d1 : Masukkan karakter ASCII ke buffer dari belakang.
+- test eax, eax
+  jnz convert_loop : Mengecek apakah EAX sudah nol. Jika belum, ulangi konversi.
+- mov  eax, 4
+  mov  ebx, 1
+  mov  ecx, edi : Siapkan untuk mencetak hasil konversi (alamat awal string di EDI).
+- mov  edx, buffer + 10
+  sub  edx, edi : Hitung panjang string (dari EDI ke akhir buffer).
+- int 0x80 : Menampilkan nilai ke layar 
+- mov eax, 1
+  xor ebx, ebx
+  int 0x80 : Syscall 1 = exit
+             Nilai EBX = 0 sebagai exit code
+             Program selesai
 - section .data : Bagian untuk data tetap yang telah didefinisikan sebelumnya.
 - msg db 'angka yang paling besar adalah ', 0xA, 0xD : String yang akan ditampilkan di layar.
 - len equ $ - msg : Mendefinisikan panjang string msg.
 - angka1 dd '52' : Angka pertama, ditulis sebagai string '52'.
 - angka2 dd '33' : Angka kedua.
 - angka3 dd '12' : Angka ketiga.
-- segment .bss : Bagian untuk variabel yang belum diinisialisasi.
-- terbesar resb 2 : Reservasi 2 byte di memori untuk menyimpan nilai terbesar.
+- section .bss : Bagian untuk variabel yang belum diinisialisasi.
+- terbesar resb 1 : Reservasi 1 byte di memori untuk menyimpan nilai terbesar.
+- buffer resb 10 : Buffer untuk menyimpan hasil angka dalam bentuk teks (maksimal 10 digit).
+
